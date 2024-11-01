@@ -9,37 +9,23 @@ __doc__ = '''
     client_key=<Ключ клиента>[
 '''
 
+from datetime import datetime
 import environ
 
-# Флаг точного/приблизительного применения координат (False/True)
-USE_ROUNDED_COORDS = False
-
-# Координаты по-умолчанию (Заводской)
-LATITUDE = 48.403121
-LONGITUDE = 40.280044
-
-# Координаты по-умолчанию (Ростов-на-Дону)
-# LATITUDE = 47.229060
-# LONGITUDE = 39.719080
-
-# чтение секретного api-ключа из файла перенменных среды окружения
-env: environ.Env = environ.Env()
+# чтение закрытых данных из файла перенменных среды окружения
+env = environ.Env()
 environ.Env.read_env()
-OPENWEATHER_API: str = env('openweather_api', str)
 
-# Шаблоны для доступа к API сервиса OpenWeather
-OPENWEATHER_URL = (
-        "https://api.openweathermap.org/data/2.5/weather?"
-        "lat={latitude}&lon={longitude}&"
-        "appid=" + OPENWEATHER_API + "&lang=ru&"
-                                     "units=metric"
-)
+# endpoint сервиса статистики он-лайн университета
+API_URL = "https://b2b.itresume.ru/api/statistics"
+
+# параметры обращения к api
+REQ_CLIENT = env('client', str)
+REQ_CLIENT_KEY = env('client_key', str)
+REQ_START_TIME = datetime.fromisoformat('2023-04-01 00:00:00.000000')
+REQ_END_TIME = datetime.fromisoformat('2023-04-01 00:01:59.999999')
+
 
 if __name__ == '__main__' :
-    # демо учебных переменных
-    ENV_EXAMPLE_LIST = env('env_example_list', list)
-    EMV_EXAMPLE_DICT = env('env_example_dict', dict)
-    print('Пример работы c переменными среды с помощью библиотеки django_environ:')
-    print(f'Итоговый запрос к сервису погоды: {OPENWEATHER_URL}')
-    print(f'Переменная среды - список: {ENV_EXAMPLE_LIST}')
-    print(f'Переменная среды - словарь: {EMV_EXAMPLE_DICT}')
+    print(f"client: {env('client', str)}, client_key: {'#'*len(env('client_key', str))}")
+

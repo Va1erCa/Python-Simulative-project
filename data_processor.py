@@ -1,12 +1,11 @@
 # Main module.
 
-import math
-
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+from get_data import get_rows
 
 
-# Press the green button in the gutter to run the script.
+def main():
+    get_rows()
+    # put_in_base()
+
 if __name__ == '__main__':
-    print_hi('PyCharm')
+    main()
