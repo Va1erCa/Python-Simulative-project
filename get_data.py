@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from dataclasses import dataclass
-import requests, json
+import requests, json, logging
 
 
 import config
@@ -20,7 +20,9 @@ class Row :
     created_at: datetime
 
 
-def get_rows(start_time: datetime | None = None, end_time: datetime | None = None) -> list[Row] :
+def get_rows(logger: logging.Logger | None = None,
+             start_time: datetime | None = None,
+             end_time: datetime | None = None) -> list[Row] :
     # инициализация параметров запроса
     params = {'client': config.REQ_CLIENT,
               'client_key': config.REQ_CLIENT_KEY,
@@ -34,10 +36,16 @@ def get_rows(start_time: datetime | None = None, end_time: datetime | None = Non
 
     # обработка ошибок запроса
     except requests.HTTPError as e :
-        print(f'HTTP Error: {e}')
+        if logger :
+            logger.error(f'HTTP Error: {e}')
+        else:
+            print(f'HTTP Error: {e}')
         return []
     except requests.RequestException as e :
-        print(f'Request Error: {e}')
+        if logger:
+            logger.error(f'Request Error: {e}')
+        else:
+            print(f'Request Error: {e}')
         return []
 
     return r.json()
