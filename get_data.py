@@ -3,11 +3,10 @@
 from datetime import datetime
 from dataclasses import dataclass
 import requests, json
-from typing import NamedTuple
+
 
 import config
 
-Celsius = float
 start = datetime
 end = datetime
 

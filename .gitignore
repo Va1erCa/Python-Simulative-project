@@ -1,2 +1,5 @@
 # Default ignored files
 .env
+/.logs
+/__pycache__
+/.mypy_cache
