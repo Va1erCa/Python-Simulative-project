@@ -1,4 +1,6 @@
-# модуль работы с логированием обработки данных приложения
+"""
+The module for working with logging of application data processing
+"""
 
 from datetime import datetime
 import re
@@ -12,9 +14,9 @@ from exceptions import ErrorInitLogsStorage
 
 def init_log_storage(path: str) -> str | None :
     '''
-    Функция подготовки файловой инфраструктуры логирования
-    :param path: папка для хранения логов
-    :return: полное имя файла логирования в случае успешной настройки и None в случае ошибки
+    The function of preparing the logging files infrastructure
+    :param path: folder for storing logs
+    :return: the full name of the logging file in case of successful configuration and <None> in case of an error
     '''
     try :
         new_log_name = datetime.now().strftime('%Y-%m-%d_%H-%M') + '.log'

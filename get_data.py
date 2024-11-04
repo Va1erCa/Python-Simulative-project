@@ -1,4 +1,6 @@
-# Module for API-interaction
+"""
+The module for API-interaction.
+"""
 
 from datetime import datetime
 from dataclasses import dataclass

@@ -1,4 +1,7 @@
-# Собственное исключения
+"""
+The module for description own exceptions
+"""
+
 
 class ErrorInitLogsStorage(Exception):
     """Не удалось корректно подготовиться к логированию"""
