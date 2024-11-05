@@ -7,7 +7,7 @@ import re
 import os
 import logging
 
-# импорт из модулей приложения
+# App's modules
 import config
 from exceptions import ErrorInitLogsStorage
 
@@ -18,23 +18,24 @@ def init_log_storage(path: str) -> str | None :
     :param path: folder for storing logs
     :return: the full name of the logging file in case of successful configuration and <None> in case of an error
     '''
+
     try :
         new_log_name = datetime.now().strftime('%Y-%m-%d_%H-%M') + '.log'
 
         if not os.path.isdir(path) :
-            # если папки логов нет, создаем её
+            # Creating a log folder if it doesn't exist yet
             os.mkdir(path)
         else :
-            # читаем содержимое папки логов
+            # Reading a log folder
             list_dir = os.listdir(path)
-            # вычисляем re-шаблон имени лога
+            # Compiling "re"-pattern for the name of log
             regexp = re.compile(r'\d{4}-\d{2}-\d{2}_\d{2}-\d{2}.log')
-            # отбираем все файлы-логи
+            # Finding all of logs files
             list_logs = []
             for el in list_dir :
                 if regexp.match(el, 0) :
                     list_logs.append(el)
-            # сортируем в порядке "возраста" лога
+            # Sorting the log list by file creation time in reverse order
             list_logs.sort(reverse=True)
             if new_log_name in list_logs[:config.MAX_NUM_LOGS_FILES] :
                 start_pos = config.MAX_NUM_LOGS_FILES
@@ -54,31 +55,31 @@ def get_my_logger(name: str = 'root',
                   level: str = logging.INFO,
                   path: str = config.LOGS_PATH) -> tuple[logging.Logger, str] :
     '''
-    Функция инициализации пользовательского логгера
-    :param name: имя логгера (по умолчанию - 'root')
-    :param level: уровень логирования (по умолчанию - 'root')
-    :param path: путь к папке логов (по умолчанию - 'root')
-    :return: объект класса logging.Logger
+    Function of creating and initializing custom's logger.
+    :param name: logger's name (by default - 'root')
+    :param level: logging level (by default - logging.INFO)
+    :param path: path to logs folder (by default it is equal a constant - LOGS_PATH from config.py file)
+    :return: a tuple including an instance of the class "logging.Logger" and a full name of log file
     '''
 
     full_name_file_log = init_log_storage(path)
     if not full_name_file_log :
         raise ErrorInitLogsStorage
     else :
-        # создаем регистратор
+        # Creating logger
         logger = logging.getLogger(name)
         logger.setLevel(level)
-        # создаем обработчик для файла
+        # Creating handler
         handler = logging.FileHandler(full_name_file_log, mode='w')
-        # строка формата сообщения
+        # Format-string for log message
         msg_fmt = '[%(name)s] [%(asctime)s] [%(levelname)s] > %(message)s'
-        # строка формата времени
+        # Format-string for date-time
         date_fmt = '%Y-%m-%d %H:%M:%S'
-        # создаем форматтер
+        # Creating a formatter
         formatter = logging.Formatter(fmt=msg_fmt, datefmt=date_fmt)
-        # добавление форматтера к обработчику
+        # Adding a formatting tool to the handler
         handler.setFormatter(formatter)
-        # добавление обработчика к логгеру
+        # Adding a handler to the logger
         logger.addHandler(handler)
     return logger, full_name_file_log
 

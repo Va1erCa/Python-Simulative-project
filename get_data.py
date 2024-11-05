@@ -6,7 +6,7 @@ from datetime import datetime
 from dataclasses import dataclass
 import requests, json, logging
 
-
+# App's modules
 import config
 
 start = datetime
@@ -25,18 +25,18 @@ class Row :
 def get_rows(logger: logging.Logger | None = None,
              start_time: datetime | None = None,
              end_time: datetime | None = None) -> list[Row] :
-    # инициализация параметров запроса
+    # Initializing request parameters
     params = {'client': config.REQ_CLIENT,
               'client_key': config.REQ_CLIENT_KEY,
               'start': start_time if start_time else config.REQ_START_TIME,
               'end': end_time if end_time else config.REQ_END_TIME
               }
-    # запрос на получение данных
+    # executing the request
     try :
         r = requests.get(config.API_URL, params=params)
-        r.raise_for_status()    # бросаем ошибку если статус запроса "не Ok"
+        r.raise_for_status()    # raise exception if status of request aren't the "ok"
 
-    # обработка ошибок запроса
+    # work with exceptions
     except requests.HTTPError as e :
         if logger :
             logger.error(f'HTTP Error: {e}')

@@ -28,6 +28,18 @@ REQ_END_TIME = datetime.fromisoformat('2023-04-01 00:01:59.999999')
 LOGS_PATH = '.logs'         # Log's files path
 MAX_NUM_LOGS_FILES = 3      # Maximum enabled number of log's files  ( acceptable >= 1 )
 
+# Parameters for connection to local Postgres server
+SERVER_CONNECTION_PARAMS = dict(host = 'localhost',
+                                port = 5432,
+                                database = 'postgres',
+                                user = 'postgres',
+                                password = '123456',
+                                autocommit = False
+                                )
+
+# SERVER_PARAM_AUTOCOMMIT = False
+
+
 # Language support
 RUSSIAN = 0
 ENGLISH = 1

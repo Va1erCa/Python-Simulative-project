@@ -4,9 +4,9 @@ The main module.
 
 from datetime import datetime
 
+# App's modules
 import config
 from config import CURR_LANG
-
 from get_data import get_rows
 from logger import get_my_logger
 
@@ -33,8 +33,11 @@ def get_process_date() -> tuple[datetime | None, datetime | None] :
 
 
 def main():
-    # The main function
-    #
+    '''
+    The main function
+    :return: None
+    '''
+
     # Requesting a processing date
     start_time, end_time = get_process_date()
     if start_time is not None:
