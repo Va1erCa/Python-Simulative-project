@@ -10,6 +10,7 @@
 * exceptions.py - собственные исключения приложения
 * config.py - константы / настройки  
 * requirements.txt - требуемые библиотеки
+* .env - файл с переменными окружения ( \<client> , \<client_key> )
 
   
 ### requirements.txt ###
