@@ -4,6 +4,7 @@ The module for PostgreSQL-server interaction.
 
 import psycopg2
 from psycopg2 import extensions
+import logging
 
 # App's modules
 import config
@@ -23,7 +24,7 @@ class DatabaseConnection:
             DatabaseConnection(**kwargs)
         return DatabaseConnection.__instance
 
-    def __init__(self, **params) :
+    def __init__(self, **params) -> None:
         if DatabaseConnection.__instance:
             raise ErrorMoreThanOneInstance
         else:
@@ -46,9 +47,17 @@ class DatabaseConnection:
         self.connection.close()
 
 
-def init_data_base() -> DatabaseConnection :
-    database_connection = DatabaseConnection()
-    # database_connection = DatabaseConnection.get_instance(port=5432)
+def init_data_base(logger: logging.Logger | None = None) -> DatabaseConnection | None :
+    try:
+        database_connection = DatabaseConnection()
+        # try:
+        # database_connection = DatabaseConnection.get_instance(port=5432)
+    except psycopg2.Error as err:
+        database_connection = None
+        if logger :
+            logger.error(f'Database init error: {err}')
+        else:
+            print(f'Database init error: {err}')
     return database_connection
 
 

@@ -12,7 +12,7 @@ import config
 from exceptions import ErrorInitLogsStorage
 
 
-def init_log_storage(path: str) -> str | None :
+def _init_log_storage(path: str) -> str | None :
     '''
     The function of preparing the logging files infrastructure
     :param path: folder for storing logs
@@ -62,7 +62,7 @@ def get_my_logger(name: str = 'root',
     :return: a tuple including an instance of the class "logging.Logger" and a full name of log file
     '''
 
-    full_name_file_log = init_log_storage(path)
+    full_name_file_log = _init_log_storage(path)
     if not full_name_file_log :
         raise ErrorInitLogsStorage
     else :
