@@ -8,7 +8,7 @@ from datetime import date, time, datetime
 import config
 from config import CURR_LANG
 from get_data import get_rows
-from put_data import init_data_base
+from put_data import put_in_base
 from logger import get_my_logger
 
 
@@ -33,7 +33,7 @@ def get_process_date() -> date | None :
     return process_date
 
 
-def main_conveyor(process_date: date, test_mode: bool = False) -> None :
+def main_conveyor(process_date: date, test_mode: bool) -> None :
     '''
     The main conveyor function.
     :param process_date: the date for which the processing is performed
@@ -66,13 +66,18 @@ def main_conveyor(process_date: date, test_mode: bool = False) -> None :
                    f'{config.LOG_TOTAL_NUM_LINES_API[CURR_LANG][3]}'
                    )
 
-    # Putting information to the database
+    # The starting mark in the log about loading data in database
     my_logger.info(config.LOG_STARTING_WORK_WITH_DBMS[CURR_LANG])
-    my_connection = init_data_base(my_logger)
-    if my_connection is not None :
-        # put_in_base(my_logger, rows)
-        ...
+
+    # Putting information to the database
+    total_lines_write, defect_lines = put_in_base(rows, my_logger)
+
+    # The ending mark in the log about loading data in database
     my_logger.info(config.LOG_ENDING_WORK_WITH_DBMS[CURR_LANG])
+    my_logger.info(f'{config.LOG_TOTAL_NUM_LINES_DBMS[CURR_LANG][0]}{total_lines_write}'
+                   f'{config.LOG_TOTAL_NUM_LINES_DBMS[CURR_LANG][1]}{defect_lines}'
+                   f'{config.LOG_TOTAL_NUM_LINES_DBMS[CURR_LANG][2]}'
+                   )
 
 
 if __name__ == '__main__':

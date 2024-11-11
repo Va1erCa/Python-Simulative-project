@@ -3,24 +3,12 @@ The module for API-interaction.
 """
 
 from datetime import datetime
-from dataclasses import dataclass
 import requests, json, logging
 
 # App's modules
 import config
 from config import CURR_LANG
-
-start = datetime
-end = datetime
-
-
-@dataclass(slots=True, frozen=True)
-class Row :
-    lti_user_id: str
-    passback_params: dict
-    is_correct: bool
-    attempt_type: str
-    created_at: datetime
+from app_types import Row
 
 
 def get_rows(logger: logging.Logger | None = None,
@@ -34,11 +22,13 @@ def get_rows(logger: logging.Logger | None = None,
               'end': end_time if end_time else config.REQ_END_TIME
               }
     res = []
+    total_readed = 0
+    corrupt_readed = 0
     # executing the request
     try :
         r = requests.get(config.API_URL, params=params)
         r.raise_for_status()    # raise exception if status of request aren't the "ok"
-        corrupt_read = 0
+        total_readed = len(r.json())
         for i, line in enumerate(r.json(), 1) :
 
             if line['lti_user_id'] is not None:
@@ -55,22 +45,22 @@ def get_rows(logger: logging.Logger | None = None,
             else :
                 logger.error(f'{config.LOG_ERROR_READ[CURR_LANG][0]}{i}'
                             f'{config.LOG_ERROR_READ[CURR_LANG][1]}')
-                corrupt_read += 1
+                corrupt_readed += 1
 
     # work with exceptions
     except requests.HTTPError as e :
-        if logger :
+        if logger is not None :
             logger.error(f'HTTP Error: {e}')
         else:
             print(f'HTTP Error: {e}')
 
     except requests.RequestException as e :
-        if logger:
+        if logger is not None:
             logger.error(f'Request Error: {e}')
         else:
             print(f'Request Error: {e}')
 
-    return res, len(r.json()), corrupt_read
+    return res, total_readed, corrupt_readed
 
 
 if __name__ == '__main__' :
