@@ -14,6 +14,16 @@ from app_types import Row
 def get_rows(logger: logging.Logger | None = None,
              start_time: datetime | None = None,
              end_time: datetime | None = None) -> tuple[list[Row], int, int] :
+    '''
+    Requesting/receiving data from a network resource
+    :param logger: A logger for recording history
+    :param start_time: Start - timestamp
+    :param end_time: End - timestamp
+    :return: Tuple of three values:
+                a list of all success readed  Row-class instances,
+                number of all reading input rows,
+                number of all corrupt reading input rows
+    '''
 
     # Initializing request parameters
     params = {'client': config.REQ_CLIENT,

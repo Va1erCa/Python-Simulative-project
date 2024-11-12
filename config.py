@@ -42,7 +42,7 @@ SERVER_CONNECTION_PARAMS = dict(host = 'localhost',
 
 # Parameters for working with main table
 DB_MAIN_TABLE_NAME = 'lms_activities'    # Name of the main table of the database
-DB_MAIN_TABLE_OPEN_RESET = True  # "True" means that every time the main table is opened, it will be reset
+DB_MAIN_TABLE_OPEN_RESET = False  # "True" means that every time the main table is opened, it will be reset
 DB_SIZE_BUFF_FOR_UPLOAD = 100   # A size buffer for upload data in main table (in lines)
 
 # Language support
@@ -107,8 +107,8 @@ LOG_INCORRECT_COMBINATION_OF_PARAMETERS = (
     ' incorrect combination of parameters: '
 )
 LOG_ERROR_IN_THE_DATA = (
-    ('строка ', ', есть ошибки: '),
-    ('line ', ', there are errors: ')
+    ('строка ', ', есть ошибки:'),
+    ('line ', ', there are errors:')
 )
 
 if __name__ == '__main__' :

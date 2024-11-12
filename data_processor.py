@@ -35,7 +35,7 @@ def get_process_date() -> date | None :
 
 def main_conveyor(process_date: date, test_mode: bool) -> None :
     '''
-    The main conveyor function.
+    The main function.
     :param process_date: the date for which the processing is performed
     :param test_mode: if it's True will be performed only processing for first hour entered date
     :return: None
