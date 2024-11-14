@@ -1,16 +1,17 @@
 """
-The module for PostgreSQL-server interaction.
+The module for Postgres-server interaction.
 """
 
 import psycopg2
 from psycopg2 import extensions
+from datetime import date
 import logging
 
 # App's modules
 import config
 from config import CURR_LANG
-from exceptions import ErrorMoreThanOneInstance
-from app_types import Row, Line
+from app_types import Row, Line, DatabaseConnection
+from logger import Mylogger
 
 # Types
 Type_connection = psycopg2.extensions.connection
@@ -41,55 +42,28 @@ DB_MAIN_TABLE_INSERT_DATA_QUERY = (f'INSERT INTO {config.DB_MAIN_TABLE_NAME} ('
                                    f'VALUES (%s, %s, %s, %s, %s, %s, %s);'
                                    )
 # Query to demonstrate all data in the main table in the database
-DB_MAIN_TABLE_TEST_SELECT_QUERY = f'select * from {config.DB_MAIN_TABLE_NAME}'
+DB_MAIN_TABLE_TEST_SELECT_QUERY = f'select * from {config.DB_MAIN_TABLE_NAME} LIMIT 10'
 
 
-class DatabaseConnection :
-    '''
-    Singleton class for saving a database connection object
-    '''
-    __instance = None  # A variable for saving an instance of the DatabaseConnection class
+def create_database_connection(logger: Mylogger) -> DatabaseConnection | None :
+    db_connection = None
+    try :
+        db_connection = DatabaseConnection()
+    except psycopg2.Error as err:
+        logger.msg_creating_database_connection_error(err)
 
-    @staticmethod  # An interface method (static) for accessing an instance of the DatabaseConnection class
-    def get_instance(**kwargs: object) -> object :
-        if not DatabaseConnection.__instance :
-            DatabaseConnection(**kwargs)
-        return DatabaseConnection.__instance
-
-    def __init__(self, **params) -> None :
-        if DatabaseConnection.__instance :
-            raise ErrorMoreThanOneInstance
-        else :
-            # Processing parameters
-            pr = config.SERVER_CONNECTION_PARAMS.copy()  # Copying dictionary with default parameters
-            pr.update(params)  # Update if the parameters have been passed to the constructor
-            pr_autocommit = pr.pop('autocommit')  # The 'autocommit' parameter will be used outside the 'pr'-dict
-
-            # Creating an instance of the DatabaseConnection class
-            self.connection = psycopg2.connect(**pr)
-            self.connection.autocommit = pr_autocommit  # Set up 'autocommit'
-
-            # assign a single instance of the class to a class variable
-            DatabaseConnection.__instance = self
-
-    def get_connection(self) -> Type_connection :
-        return self.connection
-
-    def close(self) -> None :
-        self.connection.close()
+    return db_connection
 
 
-def init_data_base(logger: logging.Logger | None = None) -> DatabaseConnection | None :
+def init_data_base(logger: Mylogger, db_connection: DatabaseConnection) -> bool :
     '''
     Initialize the database infrastructure and create the main table, if necessary.
     :param logger: A logger for recording history
     :return: DatabaseConnection - object
     '''
-
+    result = True
     try :
-        database_connection = DatabaseConnection()
-        connection = database_connection.get_connection()
-        with connection :
+        with db_connection.get_connection() as connection:
             with connection.cursor() as cursor :
                 # Searching main table in the database
                 cursor.execute(DB_MAIN_TABLE_SEARCH_QUERY)
@@ -101,28 +75,36 @@ def init_data_base(logger: logging.Logger | None = None) -> DatabaseConnection |
                     cursor.execute(DB_MAIN_TABLE_CLEAR_QUERY)
 
     except psycopg2.Error as err :
-        database_connection = None
-        if logger :
-            logger.error(f'Database init error: {err}')
-        else :
-            print(f'Database init error: {err}')
+        result = False
+        logger.msg_main_table_init_error({err})
 
-    return database_connection
+    return result
 
 
-def insert_line(line: int, connection: Type_connection, row: Row, logger: logging.Logger | None = None) -> bool :
+def insert_line(logger: Mylogger, line: int, connection: Type_connection, row: Row) -> bool :
     '''
     Function that inserting one line into main table. It's returning flag of correct data that was processed.
+    :param logger: A logger for recording history
     :param line: The number of the current line for logging by the logger
     :param connection: DatabaseConnection - object
     :param row: Input data row
-    :param logger: A logger for recording history
     :return: A flag for the correctness of the data that has been processed.
     '''
-    clean_data = True   #
+    clean_data = True   # A flag for the correctness of the data that has been processed
     with connection :
         cursor = connection.cursor()
 
+        # Adding data to the main table - Variant1 - with passing arguments using the 'dataclass' structure
+        # cursor.execute(DB_MAIN_TABLE_INSERT_DATA_QUERY, new_record.user_id,
+        #                                                  new_record.created_at,
+        #                                                  new_record.oauth_consumer_key,
+        #                                                  new_record.lis_result_sourcedid,
+        #                                                  new_record.lis_outcome_service_url,
+        #                                                  new_record.is_correct,
+        #                                                  new_record.attempt_type)
+        #                )
+
+        # Adding data to the main table - Variant2 - with passing arguments using the 'NamedTuple' tuple
         new_record = Line(user_id=row.lti_user_id,
                           created_at=row.created_at,
                           #     This variant is used if an empty string in the 'oauth_consumer_key' field
@@ -136,33 +118,18 @@ def insert_line(line: int, connection: Type_connection, row: Row, logger: loggin
                           attempt_type=row.attempt_type)
 
         # Data quality control
-        err = f'{config.LOG_OMISSION_IN_THE_DATA[CURR_LANG]}<oauth_consumer_key>' if new_record.oauth_consumer_key is None else ''
-        err += f'{config.LOG_OMISSION_IN_THE_DATA[CURR_LANG]}<lis_result_sourcedid>' if new_record.lis_result_sourcedid is None else ''
-        err += f'{config.LOG_OMISSION_IN_THE_DATA[CURR_LANG]}<lis_outcome_service_url>' if new_record.lis_outcome_service_url is None else ''
-        err += f'{config.LOG_INCORRECT_COMBINATION_OF_PARAMETERS[CURR_LANG]} <is_correct>/<attempt_type>' if (
-                (new_record.is_correct is None and new_record.attempt_type == 'submit') or
-                (new_record.is_correct is not None and new_record.attempt_type == 'run')) else ''
-        if len(err) > 0 :
+        error = ('#<oauth_consumer_key>' if new_record.oauth_consumer_key is None else '') + (
+                 '#<lis_result_sourcedid>' if new_record.lis_result_sourcedid is None else '') + (
+                 '#<lis_outcome_service_url>' if new_record.lis_outcome_service_url is None else '') + (
+                 '$<is_correct>/<attempt_type>' if ((new_record.is_correct is None
+                                                    and new_record.attempt_type == 'submit') or
+                                                   (new_record.is_correct is not None
+                                                    and new_record.attempt_type == 'run')) else '')
+        if len(error) > 0 :
             # If there are errors, we register them
+            logger.msg_omission_or_incorrect_data(line, error)
             clean_data = False
-            if logger is not None :
-                logger.error(f'{config.LOG_ERROR_IN_THE_DATA[CURR_LANG][0]}{line}'
-                             f'{config.LOG_ERROR_IN_THE_DATA[CURR_LANG][1]}{err}')
-            else :
-                print(f'{config.LOG_ERROR_IN_THE_DATA[CURR_LANG][0]}{line}'
-                      f'{config.LOG_ERROR_IN_THE_DATA[CURR_LANG][1]}{err}')
 
-        # Adding data to the main table - Variant1 - with passing arguments using the 'dataclass' structure
-        # cursor.execute(DB_MAIN_TABLE_INSERT_DATA_QUERY, new_record.user_id,
-        #                                                  new_record.created_at,
-        #                                                  new_record.oauth_consumer_key,
-        #                                                  new_record.lis_result_sourcedid,
-        #                                                  new_record.lis_outcome_service_url,
-        #                                                  new_record.is_correct,
-        #                                                  new_record.attempt_type)
-        #                )
-
-        # Adding data to the main table - Variant2 - with passing arguments using the 'NamedTuple' tuple
         cursor.execute(DB_MAIN_TABLE_INSERT_DATA_QUERY, new_record)
 
         # connection.commit()
@@ -170,11 +137,11 @@ def insert_line(line: int, connection: Type_connection, row: Row, logger: loggin
     return clean_data
 
 
-def put_in_base(rows: list[Row], logger: logging.Logger | None = None) -> tuple[int, int] :
+def put_in_base(logger: Mylogger, db_connection: DatabaseConnection, rows: list[Row], ) -> bool :
     '''
     The main function of uploading all read data to the database.
-    :param rows: A list of Row-class instances
     :param logger: A logger for recording history
+    :param rows: A list of Row-class instances
     :return: A tuple of two values:
             the number of all recorded output lines,
             the number of all recorded output lines with incomplete data
@@ -182,27 +149,31 @@ def put_in_base(rows: list[Row], logger: logging.Logger | None = None) -> tuple[
 
     total_writed = 0
     defect_writed = 0
-
-    db_connector = init_data_base()
-    if db_connector is not None :
-        my_connection = db_connector.get_connection()
-
+    result = True
+    if init_data_base(logger, db_connection) :
+        my_connection = db_connection.get_connection()
         for i, row in enumerate(rows, 1) :
-            if not insert_line(i, my_connection, row, logger) :
+            if not insert_line(logger, i, my_connection, row) :
                 defect_writed += 1
             total_writed += 1
+        # The ending mark in the log about loading data in database
+        logger.msg_dbms_end_work(total_writed, defect_writed)
+    else:
+        db_connection.close()
+        result = False
 
-        db_connector.close()
-
-    return total_writed, defect_writed
+    return result
 
 
 if __name__ == '__main__' :
-    db_connector = init_data_base()
-    my_connection = db_connector.get_connection()
-    with my_connection :
-        with my_connection.cursor() as cursor :
-            cursor.execute(DB_MAIN_TABLE_TEST_SELECT_QUERY)
-            res = cursor.fetchall()
-            print(res)
-    db_connector.close()
+    logger = Mylogger(date(2024, 10, 1))
+    db_connection = create_database_connection(logger)
+    if init_data_base(logger, db_connection) :
+        my_connection = db_connection.get_connection()
+        with my_connection :
+            with my_connection.cursor() as cursor :
+                cursor.execute(DB_MAIN_TABLE_TEST_SELECT_QUERY)
+                result = cursor.fetchall()
+                print(result)
+
+    db_connection.close()

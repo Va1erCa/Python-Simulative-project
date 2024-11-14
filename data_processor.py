@@ -7,9 +7,22 @@ from datetime import date, time, datetime
 # App's modules
 import config
 from config import CURR_LANG
+from app_types import DatabaseConnection
 from get_data import get_rows
-from put_data import put_in_base
-from logger import get_my_logger
+from put_data import put_in_base, create_database_connection
+from logger import Mylogger
+from google_sheets import create_google_sheets_report
+
+
+# # Language package of service messages
+AN_INVITATION_FOR_ENTERING_PROCESSING_DATE = (
+    'Введите дату извлечения/загрузки данных в формате: <YYYY-mm-dd> или <exit> для выхода: ',
+    'Enter processing date in format: <<YYYY-mm-dd> or type <exit> for quit: '
+)
+MESSAGE_ABOUT_BAD_INPUT = (
+    'Ошибка ввода даты, попробуйте еще раз...',
+    'Bad input. Let\'s try again...'
+)
 
 
 def get_process_date() -> date | None :
@@ -20,14 +33,14 @@ def get_process_date() -> date | None :
     '''
     while True:
         process_date = None
-        str_date = input(config.AN_INVITATION_FOR_ENTERING_PROCESSING_DATE[CURR_LANG])
+        str_date = input(AN_INVITATION_FOR_ENTERING_PROCESSING_DATE[CURR_LANG.value])
         if str_date.lower() == 'exit' :
             break
         try:
             process_date = date.fromisoformat(str_date)
             break
         except ValueError:
-            print(config.MESSAGE_ABOUT_BAD_INPUT[CURR_LANG])
+            print(MESSAGE_ABOUT_BAD_INPUT[CURR_LANG.value])
             continue
 
     return process_date
@@ -42,42 +55,31 @@ def main_conveyor(process_date: date, test_mode: bool) -> None :
     '''
 
     # Initialize our logger
-    my_logger, _ = get_my_logger()
+    logger = Mylogger(process_date)
 
     # Processing the date in the selected mode (full date or one first hour)
-    #
     start_time = datetime.combine(process_date, time(0, 0, 0, 0))
     end_time = datetime.combine(process_date, time(0 if test_mode else 23, 59, 59, 999999))
 
-    # The starting mark in the log for api-working with selected time interval
-    my_logger.info(f'{config.LOG_STARTING_WORK_WITH_API[CURR_LANG][0]}{process_date}'
-                   f'{config.LOG_STARTING_WORK_WITH_API[CURR_LANG][1]}{start_time}'
-                   f'{config.LOG_STARTING_WORK_WITH_API[CURR_LANG][2]}{end_time}'
-                   )
-
-    # Getting the lines and statistic
-    rows, total_lines_read, corrupt_read = get_rows(my_logger, start_time=start_time, end_time=end_time)
-
-    # The ending mark in the log for api-working with date
-    my_logger.info(f'{config.LOG_ENDING_WORK_WITH_API[CURR_LANG]}{process_date}')
-    my_logger.info(f'{config.LOG_TOTAL_NUM_LINES_API[CURR_LANG][0]}{total_lines_read}'
-                   f'{config.LOG_TOTAL_NUM_LINES_API[CURR_LANG][1]}{total_lines_read - corrupt_read}'
-                   f'{config.LOG_TOTAL_NUM_LINES_API[CURR_LANG][2]}{corrupt_read}'
-                   f'{config.LOG_TOTAL_NUM_LINES_API[CURR_LANG][3]}'
-                   )
+    # Getting the lines
+    rows = get_rows(logger, start_time, end_time)
 
     # The starting mark in the log about loading data in database
-    my_logger.info(config.LOG_STARTING_WORK_WITH_DBMS[CURR_LANG])
+    logger.msg_dbms_start_work()
+    # Creating the instance of DatabaseConnection class
+    db_connection = create_database_connection(logger)
+    
+    if db_connection is not None:
+        # Putting information to the database
+        result = put_in_base(logger, db_connection, rows)
 
-    # Putting information to the database
-    total_lines_write, defect_lines = put_in_base(rows, my_logger)
+        if not result :
+            return
 
-    # The ending mark in the log about loading data in database
-    my_logger.info(config.LOG_ENDING_WORK_WITH_DBMS[CURR_LANG])
-    my_logger.info(f'{config.LOG_TOTAL_NUM_LINES_DBMS[CURR_LANG][0]}{total_lines_write}'
-                   f'{config.LOG_TOTAL_NUM_LINES_DBMS[CURR_LANG][1]}{defect_lines}'
-                   f'{config.LOG_TOTAL_NUM_LINES_DBMS[CURR_LANG][2]}'
-                   )
+        # Create Google sheets report
+        # create_google_sheets_report(logger, db_connection, process_date)
+
+        db_connection.close()
 
 
 if __name__ == '__main__':
