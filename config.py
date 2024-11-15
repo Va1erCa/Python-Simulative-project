@@ -15,8 +15,8 @@ from app_types import Language
 # Test or normal app operation mode
 TEST_APP_MODE = False
 
-# Language support
-CURR_LANG = Language.RUSSIAN  # selected language (Language.RUSSIAN or Language.ENGLISH)
+
+CURR_LANG = Language.ENGLISH  # selected language (Language.RUSSIAN or Language.ENGLISH)
 
 # Endpoint for online university's api
 API_URL = "https://b2b.itresume.ru/api/statistics"
@@ -45,7 +45,7 @@ SERVER_CONNECTION_PARAMS = dict(host = 'localhost',
 
 # Parameters for working with main table
 DB_MAIN_TABLE_NAME = 'lms_activities'    # Name of the main table of the database
-DB_MAIN_TABLE_OPEN_RESET = True  # "True" means that every time the main table is opened, it will be reset
+DB_MAIN_TABLE_OPEN_RESET = False  # "True" means that every time the main table is opened, it will be reset
 
 
 if __name__ == '__main__' :

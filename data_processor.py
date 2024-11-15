@@ -7,9 +7,8 @@ from datetime import date, time, datetime
 # App's modules
 import config
 from config import CURR_LANG
-from app_types import DatabaseConnection
 from get_data import get_rows
-from put_data import put_in_base, create_database_connection
+from put_data import put_in_base, create_database_connection, DatabaseConnection
 from logger import Mylogger
 from google_sheets import create_google_sheets_report
 
@@ -77,7 +76,7 @@ def main_conveyor(process_date: date, test_mode: bool) -> None :
             return
 
         # Create Google sheets report
-        # create_google_sheets_report(logger, db_connection, process_date)
+        create_google_sheets_report(logger, db_connection, process_date)
 
         db_connection.close()
 

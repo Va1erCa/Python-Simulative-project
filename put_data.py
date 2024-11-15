@@ -9,9 +9,10 @@ import logging
 
 # App's modules
 import config
-from config import CURR_LANG
-from app_types import Row, Line, DatabaseConnection
+from app_types import Row, Line
 from logger import Mylogger
+from exceptions import ErrorMoreThanOneInstance, ErrorInsertingLine
+
 
 # Types
 Type_connection = psycopg2.extensions.connection
@@ -43,6 +44,41 @@ DB_MAIN_TABLE_INSERT_DATA_QUERY = (f'INSERT INTO {config.DB_MAIN_TABLE_NAME} ('
                                    )
 # Query to demonstrate all data in the main table in the database
 DB_MAIN_TABLE_TEST_SELECT_QUERY = f'select * from {config.DB_MAIN_TABLE_NAME} LIMIT 10'
+
+
+class DatabaseConnection :
+    '''
+    Singleton class for saving a database connection object
+    '''
+    __instance = None  # A variable for saving an instance of the DatabaseConnection class
+
+    @staticmethod  # An interface method (static) for accessing an instance of the DatabaseConnection class
+    def get_instance(**kwargs: object) -> object :
+        if not DatabaseConnection.__instance :
+            DatabaseConnection(**kwargs)
+        return DatabaseConnection.__instance
+
+    def __init__(self, **params) -> None :
+        if DatabaseConnection.__instance :
+            raise ErrorMoreThanOneInstance
+        else :
+            # Processing parameters
+            pr = config.SERVER_CONNECTION_PARAMS.copy()  # Copying dictionary with default parameters
+            pr.update(params)  # Update if the parameters have been passed to the constructor
+            pr_autocommit = pr.pop('autocommit')  # The 'autocommit' parameter will be used outside the 'pr'-dict
+
+            # Creating an instance of the DatabaseConnection class
+            self.connection = psycopg2.connect(**pr)
+            self.connection.autocommit = pr_autocommit  # Set up 'autocommit'
+
+            # assign a single instance of the class to a class variable
+            DatabaseConnection.__instance = self
+
+    def get_connection(self) -> Type_connection :
+        return self.connection
+
+    def close(self) -> None :
+        self.connection.close()
 
 
 def create_database_connection(logger: Mylogger) -> DatabaseConnection | None :
@@ -91,49 +127,54 @@ def insert_line(logger: Mylogger, line: int, connection: Type_connection, row: R
     :return: A flag for the correctness of the data that has been processed.
     '''
     clean_data = True   # A flag for the correctness of the data that has been processed
-    with connection :
-        cursor = connection.cursor()
+    try :
+        with connection :
+            cursor = connection.cursor()
 
-        # Adding data to the main table - Variant1 - with passing arguments using the 'dataclass' structure
-        # cursor.execute(DB_MAIN_TABLE_INSERT_DATA_QUERY, new_record.user_id,
-        #                                                  new_record.created_at,
-        #                                                  new_record.oauth_consumer_key,
-        #                                                  new_record.lis_result_sourcedid,
-        #                                                  new_record.lis_outcome_service_url,
-        #                                                  new_record.is_correct,
-        #                                                  new_record.attempt_type)
-        #                )
+            # Adding data to the main table - Variant1 - with passing arguments using the 'dataclass' structure
+            # cursor.execute(DB_MAIN_TABLE_INSERT_DATA_QUERY, new_record.user_id,
+            #                                                  new_record.created_at,
+            #                                                  new_record.oauth_consumer_key,
+            #                                                  new_record.lis_result_sourcedid,
+            #                                                  new_record.lis_outcome_service_url,
+            #                                                  new_record.is_correct,
+            #                                                  new_record.attempt_type)
+            #                )
 
-        # Adding data to the main table - Variant2 - with passing arguments using the 'NamedTuple' tuple
-        new_record = Line(user_id=row.lti_user_id,
-                          created_at=row.created_at,
-                          #     This variant is used if an empty string in the 'oauth_consumer_key' field
-                          #     should be treated as an error:
-                          # oauth_consumer_key=(None if row.passback_params.get('oauth_consumer_key', '') == ''
-                          #                     else row.passback_params['oauth_consumer_key']),
-                          oauth_consumer_key=row.passback_params.get('oauth_consumer_key', None),
-                          lis_result_sourcedid=row.passback_params.get('lis_result_sourcedid', None),
-                          lis_outcome_service_url=row.passback_params.get('lis_outcome_service_url', None),
-                          is_correct=None if row.is_correct is None else bool(row.is_correct),
-                          attempt_type=row.attempt_type)
+            # Adding data to the main table - Variant2 - with passing arguments using the 'NamedTuple' tuple
+            new_record = Line(user_id=row.lti_user_id,
+                              created_at=row.created_at,
+                              #     This variant is used if an empty string in the 'oauth_consumer_key' field
+                              #     should be treated as an error:
+                              # oauth_consumer_key=(None if row.passback_params.get('oauth_consumer_key', '') == ''
+                              #                     else row.passback_params['oauth_consumer_key']),
+                              oauth_consumer_key=row.passback_params.get('oauth_consumer_key', None),
+                              lis_result_sourcedid=row.passback_params.get('lis_result_sourcedid', None),
+                              lis_outcome_service_url=row.passback_params.get('lis_outcome_service_url', None),
+                              is_correct=None if row.is_correct is None else bool(row.is_correct),
+                              attempt_type=row.attempt_type)
 
-        # Data quality control
-        error = ('#<oauth_consumer_key>' if new_record.oauth_consumer_key is None else '') + (
-                 '#<lis_result_sourcedid>' if new_record.lis_result_sourcedid is None else '') + (
-                 '#<lis_outcome_service_url>' if new_record.lis_outcome_service_url is None else '') + (
-                 '$<is_correct>/<attempt_type>' if ((new_record.is_correct is None
-                                                    and new_record.attempt_type == 'submit') or
-                                                   (new_record.is_correct is not None
-                                                    and new_record.attempt_type == 'run')) else '')
-        if len(error) > 0 :
-            # If there are errors, we register them
-            logger.msg_omission_or_incorrect_data(line, error)
-            clean_data = False
+            # Data quality control
+            error = ('#<oauth_consumer_key>' if new_record.oauth_consumer_key is None else '') + (
+                     '#<lis_result_sourcedid>' if new_record.lis_result_sourcedid is None else '') + (
+                     '#<lis_outcome_service_url>' if new_record.lis_outcome_service_url is None else '') + (
+                     '$<is_correct>/<attempt_type>' if ((new_record.is_correct is None
+                                                        and new_record.attempt_type == 'submit') or
+                                                       (new_record.is_correct is not None
+                                                        and new_record.attempt_type == 'run')) else '')
+            if len(error) > 0 :
+                # If there are errors, we register them
+                logger.msg_omission_or_incorrect_data(line, error)
+                clean_data = False
 
-        cursor.execute(DB_MAIN_TABLE_INSERT_DATA_QUERY, new_record)
+            cursor.execute(DB_MAIN_TABLE_INSERT_DATA_QUERY, new_record)
 
-        # connection.commit()
-        cursor.close()
+            # connection.commit()
+            cursor.close()
+    except psycopg2.Error as err:
+        logger.msg_error_insert_line(err)
+        raise ErrorInsertingLine
+
     return clean_data
 
 
@@ -153,11 +194,14 @@ def put_in_base(logger: Mylogger, db_connection: DatabaseConnection, rows: list[
     if init_data_base(logger, db_connection) :
         my_connection = db_connection.get_connection()
         for i, row in enumerate(rows, 1) :
-            if not insert_line(logger, i, my_connection, row) :
-                defect_writed += 1
-            total_writed += 1
+            try :
+                if not insert_line(logger, i, my_connection, row) :
+                    defect_writed += 1
+                total_writed += 1
+            except ErrorInsertingLine :
+                pass
         # The ending mark in the log about loading data in database
-        logger.msg_dbms_end_work(total_writed, defect_writed)
+        logger.msg_dbms_end_work(len(rows), total_writed, defect_writed)
     else:
         db_connection.close()
         result = False

@@ -146,7 +146,7 @@ class Mylogger() :
             case Language.RUSSIAN :
                 self.msg(self._level,f'загрузка данных в базу началась')
             case Language.ENGLISH :
-                self.msg(logging.ERROR,f'the upload to the database has started')
+                self.msg(self._level,f'the upload to the database has started')
 
     def msg_creating_database_connection_error(self, error: object) -> None :
         match self._language :
@@ -162,27 +162,61 @@ class Mylogger() :
             case Language.ENGLISH :
                 self.msg(logging.ERROR, f'Error initializing the main database table: {error}')
 
-    def msg_omission_or_incorrect_data(self, line: int, error: str) -> None:
+    def msg_omission_or_incorrect_data(self, line: int, error_str: str) -> None:
         match self._language :
             case Language.RUSSIAN :
-                error = error.replace('#', ' пропущено значение поля: ')
+                error = error_str.replace('#', ' пропущено значение поля: ')
                 error = error.replace('$', ' некорректное сочетание значений полей: ')
                 self.msg(logging.ERROR, f'строка {line} есть ошибки:{error}')
             case Language.ENGLISH :
-                error = error.replace('#', ' value of the field is missing: ')
+                error = error_str.replace('#', ' value of the field is missing: ')
                 error = error.replace('$', ' incorrect combination of parameters: ')
                 self.msg(logging.ERROR, f'line {line} there are errors:{error}')
 
-    def msg_dbms_end_work(self, total_writed: int, defect_writed: int ) -> None :
+    def msg_error_insert_line(self, error:object) -> None :
+        match self._language :
+            case Language.RUSSIAN :
+                self.msg(logging.ERROR, f'Ошибка при вставке строки в базу данных: {error}')
+            case Language.ENGLISH :
+                self.msg(logging.ERROR, f'Error inserting the line in the database: {error}')
+
+    def msg_dbms_end_work(self, total_write_attempts: int, total_writed: int, defect_writed: int ) -> None :
         match self._language :
             case Language.RUSSIAN :
                 self.msg(self._level, f'загрузка данных в базу завершена')
-                self.msg(self._level, f'общее количество добавленных строк: {total_writed}, '
+                self.msg(self._level, f'из общего количество строк для добавления: {total_write_attempts}, '
+                                      f'успешно добавлено: {total_writed} строк, '
                                       f'в том числе {defect_writed} с дефектами')
             case Language.ENGLISH :
                 self.msg(self._level, f'the upload to the database has ended')
-                self.msg(self._level, f'total number of added lines: {total_writed}, '
+                self.msg(self._level, f'out of the total number of lines to add : {total_write_attempts}, '
+                                      f'{total_writed} were successfully added, '
                                       f'including {defect_writed} with defects')
+
+    def msg_google_sheets_start(self) -> None :
+        match self._language :
+            case Language.RUSSIAN :
+                self.msg(self._level,f'подготовка отчета в Google Sheets началась')
+            case Language.ENGLISH :
+                self.msg(logging.ERROR,f'the preparation of the report in Google Sheets has started')
+
+    def msg_error_get_rep_information(self, error:object) -> None :
+        match self._language :
+            case Language.RUSSIAN :
+                self.msg(logging.ERROR, f'Ошибка при выполнении sql-запроса в базе данных: {error}')
+            case Language.ENGLISH :
+                self.msg(logging.ERROR, f'Error when executing sql query in the database: {error}')
+
+    def msg_google_sheets_success_end(self) -> None :
+        match self._language :
+            case Language.RUSSIAN :
+                self.msg(self._level, f'подготовка отчета в Google Sheets успешно завершена,')
+                self.msg(self._level, f'ознакомиться с отчетом можно по ссылке: '
+                f'https://docs.google.com/spreadsheets/d/1BJT4EAVurQSHqvddz_lQ55ma4a_PL4QeFkxm7olRI3M/edit?usp=sharing')
+            case Language.ENGLISH :
+                self.msg(self._level, f'the preparation of the report in Google Sheets has been successfully completed,')
+                self.msg(self._level, f'you can view the report by following the link: '
+                f'https://docs.google.com/spreadsheets/d/1BJT4EAVurQSHqvddz_lQ55ma4a_PL4QeFkxm7olRI3M/edit?usp=sharing')
 
 
 if __name__ == '__main__' :

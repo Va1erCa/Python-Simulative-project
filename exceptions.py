@@ -8,6 +8,10 @@ class ErrorInitLogsStorage(Exception) :
     ...
 
 
+class ErrorInsertingLine(Exception) :
+    """Error when inserting a new line into the database"""
+
+
 class ErrorMoreThanOneInstance(Exception) :
     """An attempt to create more than one instance of singleton-class"""
     ...
