@@ -2,7 +2,7 @@
 The module for API-interaction.
 """
 
-from datetime import datetime, date
+from datetime import datetime, time, date
 import requests, json, logging
 
 # App's modules
@@ -15,9 +15,9 @@ from logger import Mylogger
 def get_rows(logger: Mylogger, start_time: datetime, end_time: datetime) -> list[Row] :
     '''
     Requesting/receiving data from a network resource
-    :param logger: A logger for recording history
-    :param start_time: Start - timestamp
-    :param end_time: End - timestamp
+    :param logger: a logger for recording history
+    :param start_time: start - timestamp
+    :param end_time: end - timestamp
     :return: a list of all success readed  Row-class instances
     '''
 
@@ -39,7 +39,7 @@ def get_rows(logger: Mylogger, start_time: datetime, end_time: datetime) -> list
         total_readed = len(r.json())
 
         for i, line in enumerate(r.json(), 1) :
-            if line['lti_user_id'] is not None :
+            if line['lti_user_id'] is not None and len(line['lti_user_id']) == config.LENGTH_OF_USER_ID_FIELD:
                 res.append(Row(lti_user_id=line.get('lti_user_id', None),
                                passback_params=eval(line.get('passback_params', '{}')),
                                is_correct=line.get('is_correct', None),
@@ -68,7 +68,9 @@ def get_rows(logger: Mylogger, start_time: datetime, end_time: datetime) -> list
 
 
 if __name__ == '__main__' :
-    logger = Mylogger(date.fromisoformat('2024-10-01'))
-    start_time = datetime.fromisoformat('2024-10-01 00:00:00.000000')
-    end_time = datetime.fromisoformat('2024-10-01 00:59:59.999999')
+    # test run
+    test_date = date(2024, 10, 2)
+    logger = Mylogger(test_date)
+    start_time = datetime.combine(test_date, time(0, 0, 0, 0))
+    end_time = datetime.combine(test_date, time(0, 59, 59, 999999))
     print(get_rows(logger, start_time, end_time))

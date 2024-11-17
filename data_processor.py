@@ -11,6 +11,7 @@ from get_data import get_rows
 from put_data import put_in_base, create_database_connection, DatabaseConnection
 from logger import Mylogger
 from google_sheets import create_google_sheets_report
+from email_notifications import send_email_notifications
 
 
 # # Language package of service messages
@@ -27,8 +28,7 @@ MESSAGE_ABOUT_BAD_INPUT = (
 def get_process_date() -> date | None :
     '''
     Requesting and receiving from the user the date for which the processing will be performed
-    :return: A tuple of two timestamps indicating the beginning and end of the processing time interval
-             or <None> in case of a failed attempt
+    :return: A processing date or <None> in case of a failed attempt
     '''
     while True:
         process_date = None
@@ -48,7 +48,7 @@ def get_process_date() -> date | None :
 def main_conveyor(process_date: date, test_mode: bool) -> None :
     '''
     The main function.
-    :param process_date: the date for which the processing is performed
+    :param process_date: the date on which the processing is performed
     :param test_mode: if it's True will be performed only processing for first hour entered date
     :return: None
     '''
@@ -66,23 +66,25 @@ def main_conveyor(process_date: date, test_mode: bool) -> None :
     # The starting mark in the log about loading data in database
     logger.msg_dbms_start_work()
     # Creating the instance of DatabaseConnection class
-    db_connection = create_database_connection(logger)
+    db_connection: DatabaseConnection = create_database_connection(logger)
     
     if db_connection is not None:
         # Putting information to the database
-        result = put_in_base(logger, db_connection, rows)
+        result : bool = put_in_base(logger, db_connection, rows)
 
         if not result :
             return
 
         # Create Google sheets report
-        create_google_sheets_report(logger, db_connection, process_date)
-
+        googl_sheets_result : bool = create_google_sheets_report(logger, db_connection, process_date)
         db_connection.close()
+
+        # sending email notifications
+        send_email_notifications(logger, process_date, googl_sheets_result)
 
 
 if __name__ == '__main__':
     # Requesting a processing date
-    process_date = get_process_date()
+    process_date : date | None = get_process_date()
     if process_date is not None:
         main_conveyor(process_date, test_mode=config.TEST_APP_MODE)

@@ -16,7 +16,7 @@ from app_types import Language
 TEST_APP_MODE = False
 
 
-CURR_LANG = Language.ENGLISH  # selected language (Language.RUSSIAN or Language.ENGLISH)
+CURR_LANG = Language.RUSSIAN  # selected language (Language.RUSSIAN or Language.ENGLISH)
 
 # Endpoint for online university's api
 API_URL = "https://b2b.itresume.ru/api/statistics"
@@ -43,10 +43,22 @@ SERVER_CONNECTION_PARAMS = dict(host = 'localhost',
                                 autocommit = False
                                 )
 
+# The value for verifying the correctness of the user ID in the input data
+LENGTH_OF_USER_ID_FIELD = 32
+
 # Parameters for working with main table
 DB_MAIN_TABLE_NAME = 'lms_activities'    # Name of the main table of the database
-DB_MAIN_TABLE_OPEN_RESET = False  # "True" means that every time the main table is opened, it will be reset
+DB_MAIN_TABLE_OPEN_RESET = True  # "True" means that every time the main table is opened, it will be reset
 
+# Link to the Google Sheets report sheet
+GOOGLE_SHEETS_REPORT_LINK = 'https://docs.google.com/spreadsheets/d/1BJT4EAVurQSHqvddz_lQ55ma4a_PL4QeFkxm7olRI3M/edit?usp=sharing'
+
+# Parameters for working with email notifications
+SMTP_SERVER = 'smtp.mail.ru'    # this is an SMTP-server
+SMTP_PORT = 465                 # this is his port
+SENDER_EMAIL = 'vj793service@mail.ru'
+SMTP_PASSWORD = env('smtp_password', str)
+EMAIL_ADDRESSES_FOR_MAILING = ['vj793service@mail.ru']   # there can be many addresses
 
 if __name__ == '__main__' :
     print(f"client: {env('client', str)}, client_key: {'#'*len(env('client_key', str))}")

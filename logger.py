@@ -9,6 +9,7 @@ import logging
 
 # App's modules
 import config
+from config import GOOGLE_SHEETS_REPORT_LINK
 from exceptions import ErrorInitLogsStorage
 from app_types import Language, Row
 
@@ -53,7 +54,7 @@ def _init_log_storage(path: str) -> str | None :
 
 
 def _get_my_logger(name: str = 'root',
-                   level: str = logging.INFO,
+                   level: int = logging.INFO,
                    path: str = config.LOGS_PATH) -> tuple[logging.Logger, str] :
     '''
     Function of creating and initializing custom's logger.
@@ -101,7 +102,7 @@ class Mylogger() :
 
     # Methods for creating logger messages
     def msg(self, level: int, message: str, *args, **kwargs) -> None:
-        self._logger.log(self._level, message, *args, **kwargs)
+        self._logger.log(level, message, *args, **kwargs)
 
     def msg_api_start_work(self, start_time: datetime, end_time:datetime) -> None :
         match self._language :
@@ -198,7 +199,7 @@ class Mylogger() :
             case Language.RUSSIAN :
                 self.msg(self._level,f'подготовка отчета в Google Sheets началась')
             case Language.ENGLISH :
-                self.msg(logging.ERROR,f'the preparation of the report in Google Sheets has started')
+                self.msg(self._level,f'the preparation of the report in Google Sheets has started')
 
     def msg_error_get_rep_information(self, error:object) -> None :
         match self._language :
@@ -211,14 +212,22 @@ class Mylogger() :
         match self._language :
             case Language.RUSSIAN :
                 self.msg(self._level, f'подготовка отчета в Google Sheets успешно завершена,')
-                self.msg(self._level, f'ознакомиться с отчетом можно по ссылке: '
-                f'https://docs.google.com/spreadsheets/d/1BJT4EAVurQSHqvddz_lQ55ma4a_PL4QeFkxm7olRI3M/edit?usp=sharing')
+                self.msg(self._level, f'ознакомиться с отчетом можно по ссылке: {GOOGLE_SHEETS_REPORT_LINK}')
             case Language.ENGLISH :
                 self.msg(self._level, f'the preparation of the report in Google Sheets has been successfully completed,')
-                self.msg(self._level, f'you can view the report by following the link: '
-                f'https://docs.google.com/spreadsheets/d/1BJT4EAVurQSHqvddz_lQ55ma4a_PL4QeFkxm7olRI3M/edit?usp=sharing')
+                self.msg(self._level, f'you can view the report by following the link: {GOOGLE_SHEETS_REPORT_LINK}'
+                f'')
+
+    def msg_mailing_success_completed(self) -> None :
+        match self._language :
+            case Language.RUSSIAN :
+                self.msg(self._level,f'отправка почтовых уведомлений успешно завершена')
+            case Language.ENGLISH :
+                self.msg(self._level,f'ending email notifications has been completed successfully')
 
 
 if __name__ == '__main__' :
-    logger = Mylogger(date(2024, 10, 1))
-    logger.msg(logger._le.ng.INFO, f'test for - {logger.full_name_file_log}')
+    # test run
+    test_date = date(2024, 10, 2)
+    logger = Mylogger(test_date)
+    logger.msg(logging.INFO, f'test for - {logger.full_name_file_log}')

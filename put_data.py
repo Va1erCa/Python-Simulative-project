@@ -94,7 +94,7 @@ def create_database_connection(logger: Mylogger) -> DatabaseConnection | None :
 def init_data_base(logger: Mylogger, db_connection: DatabaseConnection) -> bool :
     '''
     Initialize the database infrastructure and create the main table, if necessary.
-    :param logger: A logger for recording history
+    :param logger: a logger for recording history
     :return: DatabaseConnection - object
     '''
     result = True
@@ -120,11 +120,11 @@ def init_data_base(logger: Mylogger, db_connection: DatabaseConnection) -> bool 
 def insert_line(logger: Mylogger, line: int, connection: Type_connection, row: Row) -> bool :
     '''
     Function that inserting one line into main table. It's returning flag of correct data that was processed.
-    :param logger: A logger for recording history
-    :param line: The number of the current line for logging by the logger
+    :param logger: a logger for recording history
+    :param line: the number of the current line for logging by the logger
     :param connection: DatabaseConnection - object
-    :param row: Input data row
-    :return: A flag for the correctness of the data that has been processed.
+    :param row: input data row
+    :return: a flag for the correctness of the data that has been processed.
     '''
     clean_data = True   # A flag for the correctness of the data that has been processed
     try :
@@ -210,7 +210,9 @@ def put_in_base(logger: Mylogger, db_connection: DatabaseConnection, rows: list[
 
 
 if __name__ == '__main__' :
-    logger = Mylogger(date(2024, 10, 1))
+    # test run
+    test_date = date(2024, 10, 2)
+    logger = Mylogger(test_date)
     db_connection = create_database_connection(logger)
     if init_data_base(logger, db_connection) :
         my_connection = db_connection.get_connection()
