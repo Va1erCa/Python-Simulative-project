@@ -231,3 +231,4 @@ if __name__ == '__main__' :
     test_date = date(2024, 10, 2)
     logger = Mylogger(test_date)
     logger.msg(logging.INFO, f'test for - {logger.full_name_file_log}')
+
